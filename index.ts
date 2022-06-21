@@ -29,13 +29,13 @@ app.get('/arch', (req, res) => {
 })
 function archapi(req, res) {
   http.get('https://mirror.rackspace.com/archlinux/iso/latest/arch/version', (response) => {
-    let data = '';
+    let data:string;
     response.on('data', (chunk) => {
       data += chunk;
     });
     response.on('end', () => {
-      let version = data.split('\n')[0]
-      let mirror = req.query.mirror
+      let version:string = data.split('\n')[0]
+      let mirror:string = req.query.mirror
       if (mirror == null || mirror == '') {
         res.send("Please specify a mirror.")
       } else if (mirror == 'rackspace') {
@@ -51,5 +51,6 @@ function archapi(req, res) {
   });
 }
 app.listen(port, () => {
+  console.log("Welcome to Jonte's API")
   console.log(`App listening on port ${port}`)
 })
