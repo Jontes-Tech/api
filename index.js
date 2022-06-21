@@ -21,7 +21,7 @@ app.get('/age', (req, res) => {
     "days": ~~(Date.now() / 1000) - 1233516000 / 86400,
     "wholeDays": Math.round(~~(Date.now() / 1000) - 1233516000 / 86400),
     "years": ~~((Date.now() / 1000) - 1233516000) / 86400 / 365.2425,
-    "wholeYears": Math.round(((Date.now() / 1000) - 1233516000) / 86400 / 365.2425)
+    "wholeYears": Math.floor(((Date.now() / 1000) - 1233516000) / 86400 / 365.2425)
   }))
 })
 app.get('/arch', (req, res) => {
