@@ -1,33 +1,36 @@
-const express = require('express')
+import express = require('express')
 const app = express()
 var cors = require('cors')
-const http = require('https')
+import http = require('https')
 const port = 3000
+import { createLogger } from '@lvksh/logger';
+import chalk = require('chalk')
+
+const log = createLogger(
+  {
+      ok: {
+          label: chalk.greenBright`[OK]`,
+          newLine: '| ',
+          newLineEnd: '\\-',
+      },
+      debug: chalk.magentaBright`[DEBUG]`,
+      info: {
+          label: chalk.cyan`[INFO]`,
+          newLine: chalk.cyan`⮡`,
+          newLineEnd: chalk.cyan`⮡`,
+      },
+      error: chalk.bgRed.white.bold`[ERROR]`,
+  },
+  { padding: 'PREPEND' },
+  console.log
+);
 
 app.use(cors())
 
 app.get('/', (req, res) => {
   res.send("Welcome to Jonte's epic API.")
 })
-app.get('/api/arch', (req, res) => {
-  // This endpoint is only for backwards compatibility.
-  // It will be removed in the future.
-  archapi(req, res)
-})
-app.get('/age', (req, res) => {
-  res.setHeader('Content-Type', 'application/json');
-  res.send(JSON.stringify({
-    "seconds": ~~(Date.now() / 1000) - 1233516000,
-    "days": ~~(Date.now() / 1000) - 1233516000 / 86400,
-    "wholeDays": Math.round(~~(Date.now() / 1000) - 1233516000 / 86400),
-    "years": ~~((Date.now() / 1000) - 1233516000) / 86400 / 365.2425,
-    "wholeYears": Math.floor(((Date.now() / 1000) - 1233516000) / 86400 / 365.2425)
-  }))
-})
-app.get('/arch', (req, res) => {
-  archapi(req, res)
-})
-function archapi(req, res) {
+app.get(['/api/arch', '/arch', '/test'], (req, res) => {
   http.get('https://mirror.rackspace.com/archlinux/iso/latest/arch/version', (response) => {
     let data:string;
     response.on('data', (chunk) => {
@@ -45,12 +48,22 @@ function archapi(req, res) {
       } else if (mirror == 'torrent') {
         res.send("https://archlinux.org/releng/releases/" + version + "/torrent/")
       } else {
-        res.send("Mirror not supported, please ask Jonte to add it.")
+        res.send("Mirror not supported, asking @Jonte to add "+mirror+".")
       }
     });
   });
-}
+})
+app.get('/age', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  res.send(JSON.stringify({
+    "seconds": ~~(Date.now() / 1000) - 1233516000,
+    "days": ~~(Date.now() / 1000) - 1233516000 / 86400,
+    "wholeDays": Math.round(~~(Date.now() / 1000) - 1233516000 / 86400),
+    "years": ~~((Date.now() / 1000) - 1233516000) / 86400 / 365.2425,
+    "wholeYears": Math.floor(((Date.now() / 1000) - 1233516000) / 86400 / 365.2425)
+  }))
+})
 app.listen(port, () => {
-  console.log("Welcome to Jonte's API")
-  console.log(`App listening on port ${port}`)
+  log.info("Welcome to Jonte's API")
+  log.ok(`App listening on port ${port}`)
 })
