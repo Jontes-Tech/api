@@ -49,6 +49,7 @@ app.get(['/api/arch', '/arch', '/test'], (req, res) => {
         res.send("https://archlinux.org/releng/releases/" + version + "/torrent/")
       } else {
         res.send("Mirror not supported, asking @Jonte to add "+mirror+".")
+        log.info("Please add "+mirror+" to the list of supported mirrors.")
       }
     });
   });
