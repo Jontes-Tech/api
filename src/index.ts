@@ -1,7 +1,6 @@
 import express = require('express')
 const app = express()
 var cors = require('cors')
-import http = require('https')
 const port = 3000
 import { createLogger } from '@lvksh/logger';
 import chalk = require('chalk')
@@ -42,7 +41,9 @@ function sendResult(query:string, req:express, res:express) {
 function getArch() {
   return (new Date().getFullYear()+"."+months[new Date().getMonth()]+".01")
 }
-
+app.get('/debian', (req:express, res:express) => {
+  sendResult("Hello World!", req, res)
+})
 app.get(['/api/arch', '/arch'], (req, res) => {
   let version = getArch()
   switch (req.query.mirror) {
