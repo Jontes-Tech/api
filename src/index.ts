@@ -5,6 +5,7 @@ import http = require('https')
 const port = 3000
 import { createLogger } from '@lvksh/logger';
 import chalk = require('chalk')
+const months = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"]
 
 const log = createLogger(
   {
@@ -30,30 +31,37 @@ app.use(cors())
 app.get('/', (req, res) => {
   res.send("Welcome to Jonte's epic API.")
 })
-app.get(['/api/arch', '/arch', '/test'], (req, res) => {
-  http.get('https://mirror.rackspace.com/archlinux/iso/latest/arch/version', (response) => {
-    let data:string;
-    response.on('data', (chunk) => {
-      data += chunk;
-    });
-    response.on('end', () => {
-      let version:string = data.split('\n')[0]
-      let mirror:string = req.query.mirror
-      if (mirror == null || mirror == '') {
-        res.send("Please specify a mirror.")
-      } else if (mirror == 'rackspace') {
-        res.send("https://mirror.rackspace.com/archlinux/iso/latest/archlinux-" + version + "-x86_64.iso")
-      } else if (mirror == 'acc-umu') {
-        res.send("https://ftp.acc.umu.se/mirror/archlinux/iso/" + version + "/archlinux-" + version + "-x86_64.iso")
-      } else if (mirror == 'torrent') {
-        res.send("https://archlinux.org/releng/releases/" + version + "/torrent/")
-      } else {
-        res.send("Mirror not supported, asking @Jonte to add "+mirror+".")
-        log.info("Please add "+mirror+" to the list of supported mirrors.")
-      }
-    });
-  });
-})
+
+function sendResult(query:string, req:express, res:express) {
+  if (req.query.redirect == 'true') {
+    res.redirect(query)
+  } else {
+    res.send(query)
+  }
+}
+function getArch() {
+  return (new Date().getFullYear()+"."+months[new Date().getMonth()]+".01")
+}
+
+app.get(['/api/arch', '/arch'], (req, res) => {
+  let version = getArch()
+  switch (req.query.mirror) {
+    case '' || null || undefined:
+      res.sendFile(process.cwd()+"/static/arch.html")
+      break;
+    case 'rackspace':
+      sendResult("https://mirror.rackspace.com/archlinux/iso/latest/archlinux-" + version + "-x86_64.iso", req, res)
+      break;
+    case 'acc-umu' || 'umu':
+      sendResult("https://ftp.acc.umu.se/mirror/archlinux/iso/" + version + "/archlinux-" + version + "-x86_64.iso", req ,res)
+      break;
+    case 'torrent':
+      sendResult("https://archlinux.org/releng/releases/" + version + "/torrent/", req, res)
+    default:
+      res.send("Arch mirror not found, either you made a mistake or the mirror doesn't exist. Reporting to Jonte.")
+      log.info("User requested arch mirror: "+req.query.mirror)
+      break;
+}})
 app.get('/age', (req, res) => {
   res.setHeader('Content-Type', 'application/json');
   res.send(JSON.stringify({
