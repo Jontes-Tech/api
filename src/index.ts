@@ -2,6 +2,7 @@ import express = require('express')
 const app = express()
 var cors = require('cors')
 const port = 3000
+import fetch from 'node-fetch'
 import { createLogger } from '@lvksh/logger';
 import chalk = require('chalk')
 const months = ["01", "02", "03", "04", "05", "06", "07", "08", "09", "10", "11", "12"]
@@ -27,9 +28,15 @@ const log = createLogger(
 
 app.use(cors())
 
-app.get('/', (req, res) => {
+app.get('/', (req:express, res:express) => {
   res.send("Welcome to Jonte's epic API.")
 })
+
+app.get('/docs', (req:express, res:express) => {res.sendFile(process.cwd()+"/static/index.html")})
+
+app.get('/docs/arch', (req:express, res:express) => {res.sendFile(process.cwd()+"/static/arch.html")})
+
+app.get('/docs/debian', (req:express, res:express) => {res.sendFile(process.cwd()+"/static/debian.html")})
 
 function sendResult(query:string, req:express, res:express) {
   if (req.query.redirect == 'true') {
@@ -41,29 +48,56 @@ function sendResult(query:string, req:express, res:express) {
 function getArch() {
   return (new Date().getFullYear()+"."+months[new Date().getMonth()]+".01")
 }
-app.get('/debian', (req:express, res:express) => {
-  sendResult("Hello World!", req, res)
+
+const myDebian = {
+  data: '',
+  lastChecked: 0,
+};
+
+const getData = async () => {
+  if (Date.now() - myDebian.lastChecked > 5 * 60 * 1000) {
+      if ( process.env.jonte_api_debug == "true" ) {
+        log.debug("Fetching new Debian version")
+      }
+      const temporaryData = await fetch('https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/SHA512SUMS');
+      const text = await temporaryData.text()
+      myDebian.lastChecked = Date.now();
+      myDebian.data = text.split(/[ \t\n]+/g)[1].split(/\-/g)[1];
+  }
+  return myDebian.data;
+};
+
+app.get('/debian',async (req:express, res:express) => {
+  let debianversion = await getData()
+  if (req.query.inst != "false") {
+    // User does want Netinst
+    sendResult("https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/debian-"+debianversion+"-amd64-netinst.iso", req, res)
+  }
+  else {
+    // User does not want Netinst
+    sendResult("https://cdimage.debian.org/cdimage/unofficial/non-free/cd-including-firmware/current/amd64/iso-cd/firmware-"+debianversion+"-amd64-netinst.iso", req, res)
+  }
 })
 app.get(['/api/arch', '/arch'], (req, res) => {
-  let version = getArch()
+  let archversion = getArch()
   switch (req.query.mirror) {
     case '' || null || undefined:
-      res.sendFile(process.cwd()+"/static/arch.html")
+      res.redirect("//api.jontes.page/docs/arch")
       break;
     case 'rackspace':
-      sendResult("https://mirror.rackspace.com/archlinux/iso/latest/archlinux-" + version + "-x86_64.iso", req, res)
+      sendResult("https://mirror.rackspace.com/archlinux/iso/latest/archlinux-" + archversion + "-x86_64.iso", req, res)
       break;
     case 'acc-umu' || 'umu':
-      sendResult("https://ftp.acc.umu.se/mirror/archlinux/iso/" + version + "/archlinux-" + version + "-x86_64.iso", req ,res)
+      sendResult("https://ftp.acc.umu.se/mirror/archlinux/iso/" + archversion + "/archlinux-" + archversion + "-x86_64.iso", req ,res)
       break;
     case 'torrent':
-      sendResult("https://archlinux.org/releng/releases/" + version + "/torrent/", req, res)
+      sendResult("https://archlinux.org/releng/releases/" + archversion + "/torrent/", req, res)
     default:
       res.send("Arch mirror not found, either you made a mistake or the mirror doesn't exist. Reporting to Jonte.")
       log.info("User requested arch mirror: "+req.query.mirror)
       break;
 }})
-app.get('/age', (req, res) => {
+app.get('/age', (res:express) => {
   res.setHeader('Content-Type', 'application/json');
   res.send(JSON.stringify({
     "seconds": ~~(Date.now() / 1000) - 1233516000,
