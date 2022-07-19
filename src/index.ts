@@ -69,6 +69,10 @@ const getData = async () => {
 
 app.get('/debian',async (req:express, res:express) => {
   let debianversion = await getData()
+  if (req.query.version == "true") {
+    res.send(debianversion)
+    return
+  }
   if (req.query.inst != "false") {
     // User does want Netinst
     sendResult("https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/debian-"+debianversion+"-amd64-netinst.iso", req, res)
@@ -80,6 +84,10 @@ app.get('/debian',async (req:express, res:express) => {
 })
 app.get(['/api/arch', '/arch'], (req, res) => {
   let archversion = getArch()
+  if (req.query.version == "true") {
+    res.send(archversion)
+    return
+  }
   switch (req.query.mirror) {
     case '' || null || undefined:
       res.redirect("//api.jontes.page/docs/arch")
