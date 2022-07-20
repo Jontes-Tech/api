@@ -1,5 +1,5 @@
-import express = require('express')
-const app = express()
+const express = require("express");
+const app = express();
 var cors = require('cors')
 const port = 3000
 import fetch from 'node-fetch'
@@ -28,17 +28,17 @@ const log = createLogger(
 
 app.use(cors())
 
-app.get('/', (req:express, res:express) => {
+app.get('/', (req:any, res:any) => {
   res.send("Welcome to Jonte's epic API.")
 })
 
-app.get('/docs', (req:express, res:express) => {res.sendFile(process.cwd()+"/static/index.html")})
+app.get('/docs', (req:any, res:any) => {res.sendFile(process.cwd()+"/static/index.html")})
 
-app.get('/docs/arch', (req:express, res:express) => {res.sendFile(process.cwd()+"/static/arch.html")})
+app.get('/docs/arch', (req:any, res:any) => {res.sendFile(process.cwd()+"/static/arch.html")})
 
-app.get('/docs/debian', (req:express, res:express) => {res.sendFile(process.cwd()+"/static/debian.html")})
+app.get('/docs/debian', (req:any, res:any) => {res.sendFile(process.cwd()+"/static/debian.html")})
 
-function sendResult(query:string, req:express, res:express) {
+function sendResult(query:string, req:any, res:any) {
   if (req.query.redirect == 'true') {
     res.redirect(query)
   } else {
@@ -67,7 +67,7 @@ const getData = async () => {
   return myDebian.data;
 };
 
-app.get('/debian',async (req:express, res:express) => {
+app.get('/debian',async (req:any, res:any) => {
   let debianversion = await getData()
   if (req.query.version == "true") {
     res.send(debianversion)
@@ -105,14 +105,13 @@ app.get(['/api/arch', '/arch'], (req, res) => {
       log.info("User requested arch mirror: "+req.query.mirror)
       break;
 }})
-app.get('/age', (res:express) => {
+app.get('/age', (req:any, res:any) => {
   res.setHeader('Content-Type', 'application/json');
   res.send(JSON.stringify({
-    "seconds": ~~(Date.now() / 1000) - 1233516000,
-    "days": ~~(Date.now() / 1000) - 1233516000 / 86400,
-    "wholeDays": Math.round(~~(Date.now() / 1000) - 1233516000 / 86400),
+    "description": "This API is server-side rendered.",
     "years": ~~((Date.now() / 1000) - 1233516000) / 86400 / 365.2425,
-    "wholeYears": Math.floor(((Date.now() / 1000) - 1233516000) / 86400 / 365.2425)
+    "wholeYears": Math.floor(((Date.now() / 1000) - 1233516000) / 86400 / 365.2425),
+    "unix-epoch-of-birth": 1233516000
   }))
 })
 app.listen(port, () => {
