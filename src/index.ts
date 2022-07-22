@@ -73,12 +73,12 @@ app.get('/debian',async (req:any, res:any) => {
     res.send(debianversion)
     return
   }
-  if (req.query.netinst != "false") {
-    // User does want Netinst
+  if (req.query.nonfree == "false") {
+    // User does not want Netinst
     sendResult("https://cdimage.debian.org/debian-cd/current/amd64/iso-cd/debian-"+debianversion+"-amd64-netinst.iso", req, res)
   }
   else {
-    // User does not want Netinst
+    // User does want Netinst
     sendResult("https://cdimage.debian.org/cdimage/unofficial/non-free/cd-including-firmware/current/amd64/iso-cd/firmware-"+debianversion+"-amd64-netinst.iso", req, res)
   }
 })
