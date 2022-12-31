@@ -1,4 +1,3 @@
-const port = process.env.PORT;
 const SUPPORT_WEBHOOK = "CHANGEME"
 import * as express from "express";
 const app = express();
@@ -8,6 +7,7 @@ import * as cors from "cors";
 import { createLogger } from "@lvksh/logger";
 import * as chalk from "chalk";
 import * as fs from 'fs'
+const port = process.env.PORT;
 
 let lastlogin = Math.floor(Date.now() / 1000);
 
