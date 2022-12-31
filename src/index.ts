@@ -1,12 +1,16 @@
+const port = process.env.PORT;
+const SUPPORT_WEBHOOK = "CHANGEME"
 import * as express from "express";
 const app = express();
+import * as dotenv from 'dotenv'
+dotenv.config()
 import * as cors from "cors";
-const port = 3000;
 import { createLogger } from "@lvksh/logger";
 import * as chalk from "chalk";
 import * as fs from 'fs'
 
 let lastlogin = Math.floor(Date.now() / 1000);
+
 
 const log = createLogger(
   {
@@ -25,12 +29,13 @@ const log = createLogger(
   },
   { padding: "PREPEND" },
   console.log
-);
-
+  );
+  
 import rateLimit from "express-rate-limit";
-import { readFile, readFileSync } from "fs";
 const limiter = rateLimit({ windowMs: 6 * 1000, max: 2 });
+const strictlimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 4 });
 export default limiter;
+app.set('trust proxy', 1)
 app.use(rateLimit());
 app.use(cors());
 
@@ -69,6 +74,13 @@ app.get("/health", (req: any, res: any) => {
     });
   });
 });
+
+app.post("/new-support-ticket", strictlimiter, (req:any, res:any) => {
+  fetch(process.env.SUPPORT_WEBHOOK, {
+    method: 'POST'
+  })
+  res.send("OK")
+})
 
 app.listen(port, () => {
   log.info("Welcome to Jonte's API");
