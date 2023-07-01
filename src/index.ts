@@ -47,11 +47,13 @@ import { eq } from "drizzle-orm";
 const limiter = rateLimit({ windowMs: 6 * 1000, max: 2 });
 const strictlimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 4 });
 export default limiter;
+import morgan from "morgan";
 app.set("trust proxy", 1);
 app.use(rateLimit());
 app.use(cors());
 app.use(express.json());
 app.use(helmet());
+app.use(morgan());
 log.info(`Salt rounds: ${saltRounds}`);
 
 app.get("/", (req: any, res: any) => {
@@ -65,7 +67,7 @@ app.post("/new-support-ticket", strictlimiter, (req: any, res: any) => {
   res.send("OK");
 });
 
-app.post("/users", async (req:Request, res:Response) => {
+app.post("/users", async (req: Request, res: Response) => {
   // log the request
   log.info("POST /users");
   try {
@@ -88,24 +90,20 @@ app.post("/users", async (req:Request, res:Response) => {
       return;
     }
     // hash the password
-    bcrypt.hash(
-      req.body.password,
-      saltRounds,
-      async function (err, hash) {
-        if (err) {
-          // if there was an error, log it and send a 500 response
-          log.error(err);
-          res.status(500).send("Internal Server Error");
-          return;
-        }
-        // otherwise, set the password to the hashed password
-        insert.password = hash;
-        // insert the user into the database
-        await db.insert(users).values(insert);
-        // send a 200 response
-        res.send("OK");
+    bcrypt.hash(req.body.password, saltRounds, async function (err, hash) {
+      if (err) {
+        // if there was an error, log it and send a 500 response
+        log.error(err);
+        res.status(500).send("Internal Server Error");
+        return;
       }
-    );
+      // otherwise, set the password to the hashed password
+      insert.password = hash;
+      // insert the user into the database
+      await db.insert(users).values(insert);
+      // send a 200 response
+      res.send("OK");
+    });
   } catch (err) {
     // if there was an error, log it and send a 500 response
     log.error(err);
@@ -114,7 +112,7 @@ app.post("/users", async (req:Request, res:Response) => {
   log.info("POSTED /users");
 });
 
-app.get("/identityToken", async (req:Request, res:Response) => {
+app.get("/identityToken", async (req: Request, res: Response) => {
   log.info("GET /identityToken");
   // This is the endpoint where users exchange their email and password for a JWT called an identity token
   const usersAuth = {
@@ -168,6 +166,15 @@ app.get("/identityToken", async (req:Request, res:Response) => {
   );
 
   log.info("GOT /identityToken");
+});
+
+app.get("/age", (req: any, res: any) => {
+  res.send({
+    description: "This API is server-side rendered.",
+    years: ~~(Date.now() / 1000 - 1233516000) / 86400 / 365.2425,
+    wholeYears: Math.floor((Date.now() / 1000 - 1233516000) / 86400 / 365.2425),
+    "unix-epoch-of-birth": 1233516000,
+  });
 });
 
 app.get("/token", async (req: Request, res: Response) => {
