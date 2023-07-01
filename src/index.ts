@@ -14,6 +14,7 @@ import { migrate } from "drizzle-orm/postgres-js/migrator";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import helmet from "helmet";
+import { z } from "zod";
 const saltRounds = process.env.NODE_ENV === "production" ? 12 : 1;
 const client = postgres(
   process.env.POSTGRES || "postgres://postgres:postgres@localhost:5432/postgres"
@@ -76,8 +77,25 @@ app.post("/users", async (req: Request, res: Response) => {
       firstName: req.body.firstName,
       lastName: req.body.lastName,
       email: req.body.email,
-      password: "",
+      password: req.body.password,
     };
+
+    // Verify with Zod
+    const userSchema = z.object({
+      firstName: z.string().min(1).max(255),
+      lastName: z.string().min(1).max(255),
+      email: z.string().email(),
+      password: z.string().min(12).max(255),
+    });
+
+    // Use Zod SafeParse to verify the request body
+    try {
+      userSchema.parse(insert);
+    } catch (err) {
+      res.status(400).send("Bad Request");
+      return;
+    }
+
     // We now need to update the password to be hashed and salted
     // We also need to check if the email is already in use
     const user = await db

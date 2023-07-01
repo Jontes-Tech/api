@@ -28,7 +28,8 @@
     "morgan": "^1.10.0",
     "node-fetch": "^2",
     "postgres": "^3.3.5",
-    "ts-node": "^10.8.1"
+    "ts-node": "^10.8.1",
+    "zod": "^3.21.4"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.0",
