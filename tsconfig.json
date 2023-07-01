@@ -4,8 +4,11 @@
       "module": "es2022",
       "moduleResolution": "nodenext",
       "allowSyntheticDefaultImports": true,
-      "outDir": "./dist"
+      "outDir": "./dist",
+      "skipLibCheck": true
   },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules"],
   "ts-node": {
       "esm": true,
       "experimentalSpecifierResolution": "node"

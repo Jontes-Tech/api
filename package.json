@@ -4,6 +4,7 @@
   "description": "",
   "scripts": {
     "dev": "ts-node src",
+    "build": "tsc",
     "generate": "drizzle-kit generate:pg"
   },
   "type": "module",
