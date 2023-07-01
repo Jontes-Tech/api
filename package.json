@@ -3,8 +3,10 @@
   "version": "1.0.0",
   "description": "",
   "scripts": {
-    "dev": "ts-node src"
+    "dev": "ts-node src",
+    "generate": "drizzle-kit generate:pg"
   },
+  "type": "module",
   "repository": {
     "type": "git",
     "url": "github.com/Jontes-Tech/api"
@@ -13,21 +15,26 @@
   "license": "GPL-3.0-or-later",
   "dependencies": {
     "@lvksh/logger": "^1.6.3",
-    "cache-manager": "^5.1.1",
+    "bcrypt": "^5.1.0",
     "chalk": "^4.1.2",
     "cors": "^2.8.5",
     "dotenv": "^16.0.3",
+    "drizzle-orm": "^0.27.0",
     "express": "^4.18.1",
-    "express-cache-middleware": "^1.0.1",
     "express-rate-limit": "^6.6.0",
+    "helmet": "^7.0.0",
+    "jsonwebtoken": "^9.0.0",
     "node-fetch": "^2",
-    "ps-std": "^0.1.6",
+    "postgres": "^3.3.5",
     "ts-node": "^10.8.1"
   },
   "devDependencies": {
+    "@types/bcrypt": "^5.0.0",
+    "@types/jsonwebtoken": "^9.0.2",
     "@types/cors": "^2.8.12",
     "@types/node": "^18.0.0",
     "@types/node-fetch": "^2",
+    "drizzle-kit": "^0.19.2",
     "typescript": "^4.7.4"
   }
 }
