@@ -15,7 +15,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import helmet from "helmet";
 import { z } from "zod";
-const saltRounds = process.env.NODE_ENV === "production" ? 12 : 1;
+const saltRounds = 12;
 const client = postgres(
   process.env.POSTGRES || "postgres://postgres:postgres@localhost:5432/postgres"
 );
