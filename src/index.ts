@@ -84,7 +84,7 @@ app.post("/users", async (req: Request, res: Response) => {
     const userSchema = z.object({
       firstName: z.string().min(1).max(255),
       lastName: z.string().min(1).max(255),
-      email: z.string().email(),
+      email: z.string().email().nonempty().min(1).max(255),
       password: z.string().min(12).max(255),
     });
 
@@ -120,7 +120,19 @@ app.post("/users", async (req: Request, res: Response) => {
       // insert the user into the database
       await db.insert(users).values(insert);
       // send a 200 response
-      res.send("OK");
+      // Generate a JWT
+      const token = jwt.sign(
+        {
+          email: insert.email,
+          firstName: insert.firstName,
+          lastName: insert.lastName,
+          aud: "https://nt3.me",
+        },
+        process.env.JWT_SECRET,
+        { expiresIn: "14d" }
+      );
+      res.setHeader("Content-Type", "text/plain");
+      res.status(200).send(token);
     });
   } catch (err) {
     // if there was an error, log it and send a 500 response
@@ -134,8 +146,8 @@ app.get("/identityToken", async (req: Request, res: Response) => {
   log.info("GET /identityToken");
   // This is the endpoint where users exchange their email and password for a JWT called an identity token
   const usersAuth = {
-    email: req.query.email,
-    password: req.query.password,
+    email: req.query.email || "",
+    password: req.query.password || "",
   };
   // get the user from the database
   const user = await db
@@ -175,6 +187,7 @@ app.get("/identityToken", async (req: Request, res: Response) => {
             aud: "https://nt3.me",
             firstName: user[0].firstName,
             lastName: user[0].lastName,
+            id: user[0].id,
           },
           process.env.JWT_SECRET,
           { expiresIn: "14d" }
@@ -197,7 +210,7 @@ app.get("/age", (req: any, res: any) => {
 
 app.get("/token", async (req: Request, res: Response) => {
   log.info("GET /token");
-  const token = req.headers.authorization;
+  const token = req.headers.authorization || "";
   const newaudience = req.query.audience;
   // This is the endpoint where users exchange their identity token for a JWT called an application token.
   if (!token) {
@@ -227,6 +240,7 @@ app.get("/token", async (req: Request, res: Response) => {
           aud: newaudience,
           firstName: decoded.firstName,
           lastName: decoded.lastName,
+          id: decoded.id,
         },
         process.env.JWT_SECRET,
         { expiresIn: "7d" }
