@@ -142,12 +142,12 @@ app.post("/users", async (req: Request, res: Response) => {
   log.info("POSTED /users");
 });
 
-app.get("/identityToken", async (req: Request, res: Response) => {
-  log.info("GET /identityToken");
+app.post("/identityToken", async (req: Request, res: Response) => {
+  log.info("POST /identityToken");
   // This is the endpoint where users exchange their email and password for a JWT called an identity token
   const usersAuth = {
-    email: req.query.email || "",
-    password: req.query.password || "",
+    email: req.body.email || "",
+    password: req.body.password || "",
   };
   // get the user from the database
   const user = await db
@@ -196,7 +196,7 @@ app.get("/identityToken", async (req: Request, res: Response) => {
     }
   );
 
-  log.info("GOT /identityToken");
+  log.info("POSTED /identityToken");
 });
 
 app.get("/age", (req: any, res: any) => {
