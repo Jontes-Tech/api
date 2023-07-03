@@ -253,110 +253,73 @@ app.get("/token", async (req: Request, res: Response) => {
 
 app.post("/comments", async (req: Request, res: Response) => {
   log.info("POST /comments");
-  // This is the endpoint where users can post comments
-  const token = req.headers.authorization || "";
-  const text = req.body.text || "";
+  try {
+    // This is the endpoint where users can post comments
+    const token = req.headers.authorization || "";
+    const text = req.body.text || "";
+    const post = req.body.post || "";
 
-  if (!token) {
-    // if there is no token, send a 401 response
-    res.status(401).send("Unauthorized");
-    return;
-  }
-
-  jwt.verify(
-    token,
-    process.env.JWT_SECRET,
-    async function (err: any, decoded: any) {
-      if (err) {
-        res.status(401).send(err.message);
-        return;
-      }
-      if (decoded.aud !== "https://jontes.page") {
-        res.status(401).send("Unauthorized");
-        return;
-      }
-      const insert = [
-        {
-          authorId: decoded.id,
-          text: text,
-          post: req.body.post,
-          created: new Date().getTime(),
-        },
-      ];
-      await db.insert(comments).values(insert);
-      res.status(200).send("OK");
+    if (!token) {
+      // if there is no token, send a 401 response
+      res.status(401).send("Unauthorized");
+      return;
     }
-  );
-});
 
-app.post("/reply", async (req: Request, res: Response) => {
-  log.info("POST /reply");
-  // This is the endpoint where users can post comments
-  const token = req.headers.authorization || "";
-  const text = req.body.text || "";
-  const commentId = req.body.commentId || "";
-
-  if (!token) {
-    // if there is no token, send a 401 response
-    res.status(401).send("Unauthorized");
-    return;
-  }
-  jwt.verify(
-    token,
-    process.env.JWT_SECRET,
-    async function (err: any, decoded: any) {
-      if (err) {
-        res.status(401).send(err.message);
-        return;
-      }
-      if (decoded.aud !== "https://jontes.page") {
-        res.status(401).send("Unauthorized");
-        return;
-      }
-      const thoseComments = await db
-        .select()
-        .from(comments)
-        .where(eq(comments.id, commentId));
-      const thatComment = thoseComments[0] as Comment;
-      thatComment.replies.push({
-        authorId: decoded.id,
-        text: text,
-        created: new Date().getTime(),
-      });
-      await db.update(comments).set(
-        {
-          replies: thatComment.replies,
+    jwt.verify(
+      token,
+      process.env.JWT_SECRET,
+      async function (err: any, decoded: any) {
+        if (err) {
+          res.status(401).send(err.message);
+          return;
         }
-      ).where(eq(comments.id, commentId));
-      res.status(200).send("OK");
-      log.info("POSTED /reply")
-    }
-  );
+        if (decoded.aud !== "https://jontes.page") {
+          res.status(401).send("Unauthorized");
+          return;
+        }
+        const insert = [
+          {
+            authorId: decoded.id,
+            text: text,
+            post: post,
+            created: new Date().getTime(),
+          },
+        ];
+        await db.insert(comments).values(insert);
+        res.status(200).send("OK");
+      }
+    );
+  } catch {
+    res.status(500).send("Internal Server Error");
+  }
 });
 
 app.get("/comments/:post", async (req: Request, res: Response) => {
   log.info("GET /comments");
-  let post = decodeURIComponent(req.params.post) || "";
+  try {
+    let post = decodeURIComponent(req.params.post) || "";
 
-  let gotComments = await db
-    .select({
-      userName: users.firstName,
-      text: comments.text,
-      created: comments.created,
-      replies: comments.replies,
-      post: comments.post,
-      id: comments.id,
-    })
-    .from(comments)
-    .where(eq(comments.post, post))
-    .innerJoin(users, eq(users.id, comments.authorId))
-    .innerJoin(users, eq(users.replies.authorId, comments.authorId))
-    .orderBy(sql`${comments.created} desc`)
-    .limit(100);
+    let gotComments = await db
+      .select({
+        userName: users.firstName,
+        text: comments.text,
+        created: comments.created,
+        post: comments.post,
+        id: comments.id,
+      })
+      .from(comments)
+      .where(eq(comments.post, post))
+      .innerJoin(users, eq(users.id, comments.authorId))
+      .orderBy(sql`${comments.created} desc`)
+      .limit(100);
 
-  res.setHeader("Content-Type", "application/json; charset=utf-8");
-  res.send(gotComments);
-  log.info("GOT /comments");
+    res.setHeader("Content-Type", "application/json; charset=utf-8");
+    res.setHeader("Cache-Control", "public, max-age=3600");
+    res.send(gotComments);
+    log.info("GOT /comments");
+  } catch {
+    res.status(500).send("Internal Server Error");
+  }
 });
 
 app.listen(port, () => {

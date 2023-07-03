@@ -1,5 +1,5 @@
 import { InferModel, relations } from "drizzle-orm";
-import { pgTable, text, varchar, bigint, json } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, bigint } from "drizzle-orm/pg-core";
 import { v4 } from "uuid";
 
 export const users = pgTable("users", {
@@ -10,33 +10,21 @@ export const users = pgTable("users", {
   password: text("password"),
 });
 
-interface Reply {
-  authorId: string;
-  text: string;
-  created: number;
-}
-
 export interface Comment {
   id: string;
   authorId: string;
   text: string;
   created: number;
-  replies: Reply[];
   post: string;
 }
 
 export const comments = pgTable("comments", {
   id: text("id").notNull().default(v4()).primaryKey(),
-  authorId: text("author_id")
-    .notNull()
-    .references(() => users.id),
-  text: text("text"),
+  authorId: text("author_id").notNull(),
+  text: text("text").notNull(),
   created: bigint("created", {
-    mode: "number",
+    "mode": "number"
   }).notNull(),
-  replies: json("replies")
-    .notNull()
-    .default([] as Reply[]),
   post: text("post").notNull(),
 });
 
