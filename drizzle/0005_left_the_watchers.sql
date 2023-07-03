@@ -1,2 +1,0 @@
-ALTER TABLE "comments" ALTER COLUMN "id" SET DEFAULT '8b2de79c-f8b5-45e7-9fe9-e3cc3530a206';--> statement-breakpoint
-ALTER TABLE "users" ALTER COLUMN "id" SET DEFAULT '8c3bc518-41e8-451d-8435-93b50c97500f';

@@ -1,13 +1,13 @@
 import { InferModel, relations } from "drizzle-orm";
 import { pgTable, text, varchar, bigint } from "drizzle-orm/pg-core";
-import { v4 } from "uuid";
 
 export const users = pgTable("users", {
-  id: text("id").notNull().default(v4()).primaryKey(),
+  id: text("id").notNull().primaryKey(),
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   email: text("email"),
   password: text("password"),
+  displayName: text("display_name"),
 });
 
 export interface Comment {
@@ -19,7 +19,7 @@ export interface Comment {
 }
 
 export const comments = pgTable("comments", {
-  id: text("id").notNull().default(v4()).primaryKey(),
+  id: text("id").notNull().primaryKey(),
   authorId: text("author_id").notNull(),
   text: text("text").notNull(),
   created: bigint("created", {

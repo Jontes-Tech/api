@@ -16,6 +16,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import helmet from "helmet";
 import { z } from "zod";
+import { v4 as uuidv4 } from "uuid";
 const saltRounds = 12;
 const client = postgres(
   process.env.POSTGRES || "postgres://postgres:postgres@localhost:5432/postgres"
@@ -79,6 +80,7 @@ app.post("/users", async (req: Request, res: Response) => {
       lastName: req.body.lastName,
       email: req.body.email,
       password: req.body.password,
+      id: uuidv4(),
     };
 
     // Verify with Zod
@@ -283,6 +285,7 @@ app.post("/comments", async (req: Request, res: Response) => {
             text: text,
             post: post,
             created: new Date().getTime(),
+            id: uuidv4(),
           },
         ];
         await db.insert(comments).values(insert);
@@ -301,7 +304,7 @@ app.get("/comments/:post", async (req: Request, res: Response) => {
 
     let gotComments = await db
       .select({
-        userName: users.firstName,
+        userName: users.displayName,
         text: comments.text,
         created: comments.created,
         post: comments.post,
