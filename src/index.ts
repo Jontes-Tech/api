@@ -80,6 +80,7 @@ app.post("/users", async (req: Request, res: Response) => {
       lastName: req.body.lastName,
       email: req.body.email,
       password: req.body.password,
+      displayName: req.body.displayName,
       id: uuidv4(),
     };
 
@@ -89,6 +90,8 @@ app.post("/users", async (req: Request, res: Response) => {
       lastName: z.string().min(1).max(255),
       email: z.string().email().nonempty().min(1).max(255),
       password: z.string().min(12).max(255),
+      displayName: z.string().min(1).max(255),
+      id: z.string().uuid(),
     });
 
     // Use Zod SafeParse to verify the request body
@@ -130,6 +133,8 @@ app.post("/users", async (req: Request, res: Response) => {
           firstName: insert.firstName,
           lastName: insert.lastName,
           aud: "https://nt3.me",
+          id: insert.id,
+          displayName: insert.displayName
         },
         process.env.JWT_SECRET,
         { expiresIn: "14d" }
@@ -191,6 +196,7 @@ app.post("/identityToken", async (req: Request, res: Response) => {
             firstName: user[0].firstName,
             lastName: user[0].lastName,
             id: user[0].id,
+            displayName: user[0].displayName,
           },
           process.env.JWT_SECRET,
           { expiresIn: "14d" }
@@ -244,6 +250,7 @@ app.get("/token", async (req: Request, res: Response) => {
           firstName: decoded.firstName,
           lastName: decoded.lastName,
           id: decoded.id,
+          displayName: decoded.displayName,
         },
         process.env.JWT_SECRET,
         { expiresIn: "7d" }
