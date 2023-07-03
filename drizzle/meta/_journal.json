@@ -29,6 +29,20 @@
       "when": 1688283220508,
       "tag": "0003_amazing_steve_rogers",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1688324402348,
+      "tag": "0004_even_surge",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1688375443260,
+      "tag": "0005_left_the_watchers",
+      "breakpoints": true
     }
   ]
 }
