@@ -134,7 +134,7 @@ app.post("/users", async (req: Request, res: Response) => {
           lastName: insert.lastName,
           aud: "https://nt3.me",
           id: insert.id,
-          displayName: insert.displayName
+          displayName: insert.displayName,
         },
         process.env.JWT_SECRET,
         { expiresIn: "14d" }
@@ -267,6 +267,11 @@ app.post("/comments", async (req: Request, res: Response) => {
     const token = req.headers.authorization || "";
     const text = req.body.text || "";
     const post = req.body.post || "";
+
+    z.object({
+      text: z.string(),
+      post: z.string(),
+    }).parse({ text, post });
 
     if (!token) {
       // if there is no token, send a 401 response
