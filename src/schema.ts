@@ -1,8 +1,9 @@
 import { InferModel, relations } from "drizzle-orm";
-import { pgTable, text, varchar, bigint } from "drizzle-orm/pg-core";
+import { pgTable, text, varchar, bigint, boolean } from "drizzle-orm/pg-core";
 
 export const users = pgTable("users", {
   id: text("id").notNull().primaryKey(),
+  admin: boolean("admin").default(false),
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   email: text("email"),

@@ -81,6 +81,7 @@ app.post("/users", async (req: Request, res: Response) => {
       email: req.body.email,
       password: req.body.password,
       displayName: req.body.displayName,
+      admin: false,
       id: uuidv4(),
     };
 
@@ -91,6 +92,7 @@ app.post("/users", async (req: Request, res: Response) => {
       email: z.string().email().nonempty().min(1).max(255),
       password: z.string().min(12).max(255),
       displayName: z.string().min(1).max(255),
+      admin: z.boolean(),
       id: z.string().uuid(),
     });
 
@@ -135,6 +137,7 @@ app.post("/users", async (req: Request, res: Response) => {
           aud: "https://nt3.me",
           id: insert.id,
           displayName: insert.displayName,
+          admin: insert.admin,
         },
         process.env.JWT_SECRET,
         { expiresIn: "14d" }
@@ -197,6 +200,7 @@ app.post("/identityToken", async (req: Request, res: Response) => {
             lastName: user[0].lastName,
             id: user[0].id,
             displayName: user[0].displayName,
+            admin: user[0].admin,
           },
           process.env.JWT_SECRET,
           { expiresIn: "14d" }
@@ -251,6 +255,7 @@ app.get("/token", async (req: Request, res: Response) => {
           lastName: decoded.lastName,
           id: decoded.id,
           displayName: decoded.displayName,
+          admin: decoded.admin,
         },
         process.env.JWT_SECRET,
         { expiresIn: "7d" }
@@ -317,6 +322,7 @@ app.get("/comments/:post", async (req: Request, res: Response) => {
     let gotComments = await db
       .select({
         userName: users.displayName,
+        userIsAdmin: users.admin,
         text: comments.text,
         created: comments.created,
         post: comments.post,
