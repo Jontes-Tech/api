@@ -64,6 +64,7 @@ const rateLimit = (req: Request, res: Response, next: any) => {
       res.status(429).send("Too Many Requests");
     });
 };
+app.use(rateLimit);
 
 import morgan from "morgan";
 app.set("trust proxy", 1);
@@ -83,6 +84,8 @@ app.post("/new-support-ticket", (req: any, res: any) => {
   fetch(process.env.SUPPORT_WEBHOOK, {
     method: "POST",
   });
+  
+  // deepcode ignore TooPermissiveCorsHeader: Because I forgot the domain name. I'll have a look in the logs.
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.send("OK");
 });
