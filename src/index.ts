@@ -45,7 +45,7 @@ const log = createLogger(
   console.log
 );
 
-import { eq } from "drizzle-orm";
+import { eq, and } from "drizzle-orm";
 import { RateLimiterMemory } from "rate-limiter-flexible";
 const rateLimiter = new RateLimiterMemory({
   points: 8,
@@ -73,20 +73,19 @@ app.use(helmet());
 app.use(morgan());
 log.info(`Salt rounds: ${saltRounds}`);
 
+app.use(cors())
+
 app.get("/", (req: any, res: any) => {
   res.send("Welcome to Jonte's epic API.");
 });
 
 app.post("/new-support-ticket", (req: any, res: any) => {
   // Consume the rate limiter
-  rateLimiter
-    .consume(req.ip, 4)
+  rateLimiter.consume(req.ip, 4);
   fetch(process.env.SUPPORT_WEBHOOK, {
     method: "POST",
   });
-  
-  // deepcode ignore TooPermissiveCorsHeader: Because I forgot the domain name. I'll have a look in the logs.
-  res.setHeader("Access-Control-Allow-Origin", "*");
+
   res.send("OK");
 });
 
@@ -164,7 +163,6 @@ app.post("/users", async (req: Request, res: Response) => {
       );
       rateLimiter.penalty(req.ip, 4);
       res.setHeader("Content-Type", "text/plain");
-      res.setHeader("Access-Control-Allow-Origin", "https://identity.nt3.me");
       res.status(200).send(token);
     });
   } catch (err) {
@@ -208,13 +206,12 @@ app.post("/identityToken", async (req: Request, res: Response) => {
       }
       // if the password is incorrect, send a 401 response
       if (!result) {
-        rateLimiter.penalty(req.ip, 6)
+        rateLimiter.penalty(req.ip, 6);
         res.status(401).send("Unauthorized");
         return;
       }
       // otherwise, send a 200 response with the identity token
       res.setHeader("Content-Type", "text/plain");
-      res.setHeader("Access-Control-Allow-Origin", "https://identity.nt3.me");
       res.send(
         jwt.sign(
           {
@@ -260,7 +257,7 @@ app.get("/token", async (req: Request, res: Response) => {
   jwt.verify(token, process.env.JWT_SECRET, function (err: any, decoded: any) {
     // Send individual error messages for each error
     if (err) {
-      rateLimiter.penalty(req.ip, 6)
+      rateLimiter.penalty(req.ip, 6);
       res.status(401).send(err.message);
       return;
     }
@@ -271,7 +268,6 @@ app.get("/token", async (req: Request, res: Response) => {
 
     // otherwise, send a 200 response with the application token
     res.setHeader("Content-Type", "text/plain");
-    res.setHeader("Access-Control-Allow-Origin", "https://identity.nt3.me");
     res.send(
       jwt.sign(
         {
@@ -316,12 +312,12 @@ app.post("/comments", async (req: Request, res: Response) => {
       async function (err: any, decoded: any) {
         if (err) {
           res.status(401).send(err.message);
-          rateLimiter.penalty(req.ip, 4)
+          rateLimiter.penalty(req.ip, 4);
           return;
         }
         if (decoded.aud !== "https://jontes.page") {
           res.status(401).send("Unauthorized");
-          rateLimiter.penalty(req.ip, 4)
+          rateLimiter.penalty(req.ip, 4);
           return;
         }
         const insert = [
@@ -334,7 +330,6 @@ app.post("/comments", async (req: Request, res: Response) => {
           },
         ];
         await db.insert(comments).values(insert);
-        res.setHeader("Access-Control-Allow-Origin", "https://jontes.page")
         res.status(200).send("OK");
       }
     );
@@ -364,10 +359,51 @@ app.get("/comments/:post", async (req: Request, res: Response) => {
       .limit(100);
 
     res.setHeader("Content-Type", "application/json; charset=utf-8");
-    res.setHeader("Access-Control-Allow-Origin", "https://jontes.page");
     res.setHeader("Cache-Control", "public, max-age=3600");
     res.send(gotComments);
     log.info("GOT /comments");
+  } catch {
+    res.status(500).send("Internal Server Error");
+  }
+});
+
+app.delete("/comment/:id", async (req: Request, res: Response) => {
+  log.info("DELETE /comment/:id");
+  try {
+    // This is the endpoint where users can post comments
+    const token = req.headers.authorization || "";
+    const id = req.params.id || "";
+
+    if (!token) {
+      // if there is no token, send a 401 response
+      res.status(401).send("Unauthorized");
+      return;
+    }
+
+    jwt.verify(
+      token,
+      process.env.JWT_SECRET,
+      async function (err: any, decoded: any) {
+        if (err) {
+          res.status(401).send(err.message);
+          rateLimiter.penalty(req.ip, 4);
+          return;
+        }
+        if (decoded.aud !== "https://jontes.page") {
+          res.status(401).send("Unauthorized");
+          rateLimiter.penalty(req.ip, 4);
+          return;
+        }
+        if (!id) {
+          res.status(400).send("Bad Request");
+          return;
+        }
+        await db
+          .delete(comments)
+          .where(and(eq(comments.id, id), eq(comments.authorId, decoded.id)));
+        res.status(200).send("OK");
+      }
+    );
   } catch {
     res.status(500).send("Internal Server Error");
   }
