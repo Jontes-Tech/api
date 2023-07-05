@@ -45,15 +45,28 @@ const log = createLogger(
   console.log
 );
 
-import rateLimit from "express-rate-limit";
 import { eq } from "drizzle-orm";
-const limiter = rateLimit({ windowMs: 6 * 1000, max: 2 });
-const strictlimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 4 });
-export default limiter;
+import { RateLimiterMemory } from "rate-limiter-flexible";
+const rateLimiter = new RateLimiterMemory({
+  points: 8,
+  duration: 10,
+});
+
+const rateLimit = (req: Request, res: Response, next: any) => {
+  rateLimiter
+    .consume(req.ip)
+    .then(() => {
+      next();
+    })
+    .catch(() => {
+      // deepcode ignore TooPermissiveCorsHeader: It's just an error message
+      res.set("Access-Control-Allow-Origin", "*");
+      res.status(429).send("Too Many Requests");
+    });
+};
+
 import morgan from "morgan";
 app.set("trust proxy", 1);
-app.use(rateLimit());
-app.use(cors());
 app.use(express.json());
 app.use(helmet());
 app.use(morgan());
@@ -63,10 +76,14 @@ app.get("/", (req: any, res: any) => {
   res.send("Welcome to Jonte's epic API.");
 });
 
-app.post("/new-support-ticket", strictlimiter, (req: any, res: any) => {
+app.post("/new-support-ticket", (req: any, res: any) => {
+  // Consume the rate limiter
+  rateLimiter
+    .consume(req.ip, 4)
   fetch(process.env.SUPPORT_WEBHOOK, {
     method: "POST",
   });
+  res.setHeader("Access-Control-Allow-Origin", "*");
   res.send("OK");
 });
 
@@ -142,7 +159,9 @@ app.post("/users", async (req: Request, res: Response) => {
         process.env.JWT_SECRET,
         { expiresIn: "14d" }
       );
+      rateLimiter.penalty(req.ip, 4);
       res.setHeader("Content-Type", "text/plain");
+      res.setHeader("Access-Control-Allow-Origin", "https://identity.nt3.me");
       res.status(200).send(token);
     });
   } catch (err) {
@@ -186,11 +205,13 @@ app.post("/identityToken", async (req: Request, res: Response) => {
       }
       // if the password is incorrect, send a 401 response
       if (!result) {
+        rateLimiter.penalty(req.ip, 6)
         res.status(401).send("Unauthorized");
         return;
       }
       // otherwise, send a 200 response with the identity token
       res.setHeader("Content-Type", "text/plain");
+      res.setHeader("Access-Control-Allow-Origin", "https://identity.nt3.me");
       res.send(
         jwt.sign(
           {
@@ -236,6 +257,7 @@ app.get("/token", async (req: Request, res: Response) => {
   jwt.verify(token, process.env.JWT_SECRET, function (err: any, decoded: any) {
     // Send individual error messages for each error
     if (err) {
+      rateLimiter.penalty(req.ip, 6)
       res.status(401).send(err.message);
       return;
     }
@@ -245,7 +267,8 @@ app.get("/token", async (req: Request, res: Response) => {
     }
 
     // otherwise, send a 200 response with the application token
-    res.set("Content-Type", "text/plain");
+    res.setHeader("Content-Type", "text/plain");
+    res.setHeader("Access-Control-Allow-Origin", "https://identity.nt3.me");
     res.send(
       jwt.sign(
         {
@@ -290,10 +313,12 @@ app.post("/comments", async (req: Request, res: Response) => {
       async function (err: any, decoded: any) {
         if (err) {
           res.status(401).send(err.message);
+          rateLimiter.penalty(req.ip, 4)
           return;
         }
         if (decoded.aud !== "https://jontes.page") {
           res.status(401).send("Unauthorized");
+          rateLimiter.penalty(req.ip, 4)
           return;
         }
         const insert = [
@@ -306,6 +331,7 @@ app.post("/comments", async (req: Request, res: Response) => {
           },
         ];
         await db.insert(comments).values(insert);
+        res.setHeader("Access-Control-Allow-Origin", "https://jontes.page")
         res.status(200).send("OK");
       }
     );
@@ -335,6 +361,7 @@ app.get("/comments/:post", async (req: Request, res: Response) => {
       .limit(100);
 
     res.setHeader("Content-Type", "application/json; charset=utf-8");
+    res.setHeader("Access-Control-Allow-Origin", "https://jontes.page");
     res.setHeader("Cache-Control", "public, max-age=3600");
     res.send(gotComments);
     log.info("GOT /comments");
