@@ -1,6 +1,8 @@
 import express, { Request, Response } from "express";
 // deepcode ignore UseCsurfForExpress: <please specify a reason of ignoring this>
 const app = express();
+import { Resend } from "resend";
+
 import dotenv from "dotenv";
 dotenv.config();
 import cors from "cors";
@@ -10,7 +12,7 @@ const port = process.env.PORT;
 import { drizzle } from "drizzle-orm/postgres-js";
 import { sql } from "drizzle-orm";
 import postgres from "postgres";
-import { NewUser, comments, users, Comment } from "./schema.js";
+import { NewUser, comments, users, Comment, magicLinks } from "./schema.js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
 import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
@@ -18,6 +20,7 @@ import helmet from "helmet";
 import { z } from "zod";
 import { v4 as uuidv4 } from "uuid";
 const saltRounds = 12;
+import crypto from "crypto";
 const client = postgres(
   process.env.POSTGRES || "postgres://postgres:postgres@localhost:5432/postgres"
 );
@@ -73,7 +76,8 @@ app.use(helmet());
 app.use(morgan());
 log.info(`Salt rounds: ${saltRounds}`);
 
-app.use(cors())
+app.use(cors());
+const resend = new Resend(process.env.RESEND);
 
 app.get("/", (req: any, res: any) => {
   res.send("Welcome to Jonte's epic API.");
@@ -98,7 +102,6 @@ app.post("/users", async (req: Request, res: Response) => {
       firstName: req.body.firstName,
       lastName: req.body.lastName,
       email: req.body.email,
-      password: req.body.password,
       displayName: req.body.displayName,
       admin: false,
       id: uuidv4(),
@@ -109,7 +112,6 @@ app.post("/users", async (req: Request, res: Response) => {
       firstName: z.string().min(1).max(255),
       lastName: z.string().min(1).max(255),
       email: z.string().email().nonempty().min(1).max(255),
-      password: z.string().min(12).max(255),
       displayName: z.string().min(1).max(255),
       admin: z.boolean(),
       id: z.string().uuid(),
@@ -134,37 +136,26 @@ app.post("/users", async (req: Request, res: Response) => {
       res.status(409).send("Email already in use");
       return;
     }
-    // hash the password
-    bcrypt.hash(req.body.password, saltRounds, async function (err, hash) {
-      if (err) {
-        // if there was an error, log it and send a 500 response
-        log.error(err);
-        res.status(500).send("Internal Server Error");
-        return;
-      }
-      // otherwise, set the password to the hashed password
-      insert.password = hash;
-      // insert the user into the database
-      await db.insert(users).values(insert);
-      // send a 200 response
-      // Generate a JWT
-      const token = jwt.sign(
-        {
-          email: insert.email,
-          firstName: insert.firstName,
-          lastName: insert.lastName,
-          aud: "https://nt3.me",
-          id: insert.id,
-          displayName: insert.displayName,
-          admin: insert.admin,
-        },
-        process.env.JWT_SECRET,
-        { expiresIn: "14d" }
-      );
-      rateLimiter.penalty(req.ip, 4);
-      res.setHeader("Content-Type", "text/plain");
-      res.status(200).send(token);
-    });
+    // insert the user into the database
+    await db.insert(users).values(insert);
+    // send a 200 response
+    // Generate a JWT
+    const token = jwt.sign(
+      {
+        email: insert.email,
+        firstName: insert.firstName,
+        lastName: insert.lastName,
+        aud: "https://nt3.me",
+        id: insert.id,
+        displayName: insert.displayName,
+        admin: insert.admin,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "14d" }
+    );
+    rateLimiter.penalty(req.ip, 4);
+    res.setHeader("Content-Type", "text/plain");
+    res.status(200).send(token);
   } catch (err) {
     // if there was an error, log it and send a 500 response
     log.error(err);
@@ -173,64 +164,125 @@ app.post("/users", async (req: Request, res: Response) => {
   log.info("POSTED /users");
 });
 
-app.post("/identityToken", async (req: Request, res: Response) => {
-  log.info("POST /identityToken");
-  // This is the endpoint where users exchange their email and password for a JWT called an identity token
-  const usersAuth = {
-    email: req.body.email || "",
-    password: req.body.password || "",
-  };
-  // get the user from the database
-  const user = await db
-    .select()
-    .from(users)
-    .where(eq(users.email, usersAuth.email));
+app.post("/signup", async (req: Request, res: Response) => {
+  log.info("POST /signup");
+  try {
+    // create new user from request body
+    let insert: NewUser = {
+      firstName: req.body.firstName,
+      lastName: req.body.lastName,
+      email: req.body.email,
+      displayName: req.body.displayName,
+      admin: false,
+      id: uuidv4(),
+    };
+    // Make sure email doesn't already exist
+    const user = await db
+      .select()
+      .from(users)
+      .where(eq(users.email, insert.email));
+    if (user.length !== 0) {
+      res.status(409).send("Email already in use");
+      return;
+    }
+    await db.insert(users).values(insert);
+    res.send("OK");
+  } catch (err) {
+    res.send("Internal Server Error");
+  }
+});
 
-  // if the user doesn't exist, send a 401 response
-  if (user.length === 0) {
-    res.status(401).send("Unauthorized");
+app.options("/singup", cors());
+
+app.get("/getMagic/:email", async (req: Request, res: Response) => {
+  log.info("GET /getMagic");
+  // Safely generate random URL-safe string
+  const magic = crypto
+    .randomBytes(32)
+    .toString("base64")
+    .replace(/\//g, "_")
+    .replace(/\+/g, "-")
+    .replace(/=/g, "");
+
+  console.log(magic, req.params.email);
+  try {
+    const data = await resend.emails.send({
+      from: "NT3 Identity <identity@nt3.me>",
+      to: [req.params.email],
+      subject: "Your NT3 Magic Link",
+      html: `
+      <html>
+      <head>
+      <style>
+      body {
+        font-family: sans-serif;
+        background-color: #1c1917;
+        color: #fff;
+      }
+      </style>
+      </head>
+      <body>
+      <h1>NT3 Magic Link</h1>
+      <p>Click the link below to log in to your NT3 account.</p>
+      <a href="https://api.jontes.page/auth/magic/${magic}">Sign in!</a>
+      </body>
+      </html>
+      `,
+    });
+  } catch (error) {
+    res.status(500).json({ error });
     return;
   }
 
-  // otherwise, check if the password is correct
-  // Safely, with Bcrypt, compare the password to the hashed password
-  bcrypt.compare(
-    usersAuth.password,
-    user[0].password,
-    function (err: any, result: any) {
-      if (err) {
-        // if there was an error, log it and send a 500 response
-        log.error(err);
-        res.status(500).send("Internal Server Error");
-        return;
-      }
-      // if the password is incorrect, send a 401 response
-      if (!result) {
-        rateLimiter.penalty(req.ip, 6);
-        res.status(401).send("Unauthorized");
-        return;
-      }
-      // otherwise, send a 200 response with the identity token
-      res.setHeader("Content-Type", "text/plain");
-      res.send(
-        jwt.sign(
-          {
-            email: user[0].email,
-            aud: "https://nt3.me",
-            firstName: user[0].firstName,
-            lastName: user[0].lastName,
-            id: user[0].id,
-            displayName: user[0].displayName,
-            admin: user[0].admin,
-          },
-          process.env.JWT_SECRET,
-          { expiresIn: "14d" }
-        )
-      );
-    }
-  );
+  // I want to insert the user id of the user with the email into the database, as well as the magic token
+  await db.insert(magicLinks).values({
+    email: req.params.email as string,
+    token: magic,
+    expires: Date.now() + 1000 * 60 * 5,
+  });
 
-  log.info("POSTED /identityToken");
+  res.send("OK");
+});
+
+app.get("/auth/magic/:token", async (req: Request, res: Response) => {
+  log.info("GET /auth/magic");
+  // Check if the token is valid
+  const token = req.params.token;
+  const magic = await db
+    .select()
+    .from(magicLinks)
+    .where(eq(magicLinks.token, token));
+  if (magic.length === 0) {
+    res.status(401).send("Unauthorized");
+    return;
+  }
+  // Check if the token is expired
+  if (magic[0].expires < Date.now()) {
+    res.status(401).send("Expired");
+    return;
+  }
+  // If the token is valid, generate a JWT
+  const user = await db
+    .select()
+    .from(users)
+    .where(eq(users.email, magic[0].email));
+  const jwtToken = jwt.sign(
+    {
+      email: user[0].email,
+      firstName: user[0].firstName,
+      lastName: user[0].lastName,
+      aud: "https://nt3.me",
+      id: user[0].id,
+      displayName: user[0].displayName,
+      admin: user[0].admin,
+    },
+    process.env.JWT_SECRET,
+    { expiresIn: "90d" }
+  );
+  // Delete the magic link from the database
+  await db.delete(magicLinks).where(eq(magicLinks.token, token));
+  // deepcode ignore OR: <please specify a reason of ignoring this>
+  res.redirect(`https://identity.nt3.me?method=magic&token=${jwtToken}`);
 });
 
 app.get("/age", (req: any, res: any) => {

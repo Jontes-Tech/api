@@ -7,7 +7,6 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   email: text("email"),
-  password: text("password"),
   displayName: text("display_name"),
 });
 
@@ -24,7 +23,7 @@ export const comments = pgTable("comments", {
   authorId: text("author_id").notNull(),
   text: text("text").notNull(),
   created: bigint("created", {
-    "mode": "number"
+    mode: "number",
   }).notNull(),
   post: text("post").notNull(),
 });
@@ -32,6 +31,14 @@ export const comments = pgTable("comments", {
 export const commentsRelations = relations(comments, ({ one }) => ({
   authorId: one(users, { fields: [comments.authorId], references: [users.id] }),
 }));
+
+export const magicLinks = pgTable("magic_links", {
+  token: text("token").notNull().primaryKey(),
+  email: text("email").notNull(),
+  expires: bigint("expires", {
+    mode: "number",
+  }).notNull(),
+});
 
 export type User = InferModel<typeof users>;
 export type NewUser = InferModel<typeof users, "insert">;

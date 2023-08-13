@@ -22,6 +22,27 @@
       "when": 1688457550904,
       "tag": "0002_remarkable_purple_man",
       "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "5",
+      "when": 1691858191580,
+      "tag": "0003_melted_madame_web",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "5",
+      "when": 1691858326401,
+      "tag": "0004_magenta_nico_minoru",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "5",
+      "when": 1691915342534,
+      "tag": "0005_simple_ricochet",
+      "breakpoints": true
     }
   ]
 }
