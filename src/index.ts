@@ -14,7 +14,7 @@ import { sql } from "drizzle-orm";
 import postgres from "postgres";
 import { NewUser, comments, users, Comment, magicLinks } from "./schema.js";
 import { migrate } from "drizzle-orm/postgres-js/migrator";
-import bcrypt from "bcrypt";
+import { readFileSync } from "fs";
 import jwt from "jsonwebtoken";
 import helmet from "helmet";
 import { z } from "zod";
@@ -25,6 +25,8 @@ const client = postgres(
   process.env.POSTGRES || "postgres://postgres:postgres@localhost:5432/postgres"
 );
 const db = drizzle(client);
+const JWTPublicKey = readFileSync("./jwtRS512.key.pub");
+const JWTPrivateKey = readFileSync("./jwtRS512.key");
 (async () => {
   await migrate(db, { migrationsFolder: "drizzle" });
   log.ok("Migrations ran successfully");
@@ -150,8 +152,8 @@ app.post("/users", async (req: Request, res: Response) => {
         displayName: insert.displayName,
         admin: insert.admin,
       },
-      process.env.JWT_SECRET,
-      { expiresIn: "14d" }
+      JWTPrivateKey,
+      { expiresIn: "7d", algorithm: "RS512" }
     );
     rateLimiter.penalty(req.ip, 4);
     res.setHeader("Content-Type", "text/plain");
@@ -276,8 +278,8 @@ app.get("/auth/magic/:token", async (req: Request, res: Response) => {
       displayName: user[0].displayName,
       admin: user[0].admin,
     },
-    process.env.JWT_SECRET,
-    { expiresIn: "90d" }
+    JWTPrivateKey,
+    { expiresIn: "90d", algorithm: "RS512" }
   );
   // Delete the magic link from the database
   await db.delete(magicLinks).where(eq(magicLinks.token, token));
@@ -306,7 +308,7 @@ app.get("/token", async (req: Request, res: Response) => {
   }
   // otherwise, verify the token
   // if the token is invalid, send a 401 response
-  jwt.verify(token, process.env.JWT_SECRET, function (err: any, decoded: any) {
+  jwt.verify(token, JWTPublicKey, function (err: any, decoded: any) {
     // Send individual error messages for each error
     if (err) {
       rateLimiter.penalty(req.ip, 6);
@@ -331,8 +333,8 @@ app.get("/token", async (req: Request, res: Response) => {
           displayName: decoded.displayName,
           admin: decoded.admin,
         },
-        process.env.JWT_SECRET,
-        { expiresIn: "7d" }
+        JWTPrivateKey,
+        { expiresIn: "7d", algorithm: "RS512" }
       )
     );
   });
@@ -360,7 +362,7 @@ app.post("/comments", async (req: Request, res: Response) => {
 
     jwt.verify(
       token,
-      process.env.JWT_SECRET,
+      JWTPublicKey,
       async function (err: any, decoded: any) {
         if (err) {
           res.status(401).send(err.message);
@@ -434,7 +436,7 @@ app.delete("/comment/:id", async (req: Request, res: Response) => {
 
     jwt.verify(
       token,
-      process.env.JWT_SECRET,
+      JWTPublicKey,
       async function (err: any, decoded: any) {
         if (err) {
           res.status(401).send(err.message);

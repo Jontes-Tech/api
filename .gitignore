@@ -1,3 +1,5 @@
 node_modules/
 dist/
 .env
+jwtRS512.key
+jwtRS512.key.pub
