@@ -6,7 +6,8 @@
     "dev": "ts-node src",
     "build": "tsc",
     "generate": "drizzle-kit generate:pg",
-    "studio": "drizzle-kit studio"
+    "studio": "drizzle-kit studio",
+    "pushdb": "drizzle-kit up:pg"
   },
   "type": "module",
   "repository": {

@@ -95,6 +95,10 @@ app.post("/new-support-ticket", (req: any, res: any) => {
   res.send("OK");
 });
 
+const emailHash = (email: string) => {
+  return crypto.createHash("sha512").update(email).digest("hex").replace(/\//g, "_").replace(/\+/g, "-").replace(/=/g, "");
+};
+
 app.post("/users", async (req: Request, res: Response) => {
   // log the request
   log.info("POST /users");
@@ -107,6 +111,7 @@ app.post("/users", async (req: Request, res: Response) => {
       displayName: req.body.displayName,
       admin: false,
       id: uuidv4(),
+      emailHash: emailHash(req.body.email),
     };
 
     // Verify with Zod
@@ -151,6 +156,7 @@ app.post("/users", async (req: Request, res: Response) => {
         id: insert.id,
         displayName: insert.displayName,
         admin: insert.admin,
+        hue: insert.hue,
       },
       JWTPrivateKey,
       { expiresIn: "7d", algorithm: "RS512" }
@@ -166,35 +172,28 @@ app.post("/users", async (req: Request, res: Response) => {
   log.info("POSTED /users");
 });
 
-app.post("/signup", async (req: Request, res: Response) => {
-  log.info("POST /signup");
+app.get("/identity-from-hash", async (req: Request, res: Response) => {
+  log.info("GET /identity-from-hash");
   try {
-    // create new user from request body
-    let insert: NewUser = {
-      firstName: req.body.firstName,
-      lastName: req.body.lastName,
-      email: req.body.email,
-      displayName: req.body.displayName,
-      admin: false,
-      id: uuidv4(),
-    };
-    // Make sure email doesn't already exist
+    const hash = req.query.hash || "This will never be a valid hash, but it will still be a string";
+    if (!hash) {
+      res.status(400).send("Bad Request");
+      return;
+    }
     const user = await db
       .select()
       .from(users)
-      .where(eq(users.email, insert.email));
-    if (user.length !== 0) {
-      res.status(409).send("Email already in use");
+      .where(and(eq(users.emailHash, hash), eq(users.makeEmailPublic, true)));
+    if (user.length === 0) {
+      res.status(404).send("Not Found");
       return;
     }
-    await db.insert(users).values(insert);
-    res.send("OK");
+    res.setHeader("Content-Type", "text/plain; charset=utf-8");
+    res.send(user[0].email);
   } catch (err) {
-    res.send("Internal Server Error");
+    res.status(500).send("Internal Server Error");
   }
 });
-
-app.options("/singup", cors());
 
 app.get("/getMagic/:email", async (req: Request, res: Response) => {
   log.info("GET /getMagic");
@@ -360,33 +359,29 @@ app.post("/comments", async (req: Request, res: Response) => {
       return;
     }
 
-    jwt.verify(
-      token,
-      JWTPublicKey,
-      async function (err: any, decoded: any) {
-        if (err) {
-          res.status(401).send(err.message);
-          rateLimiter.penalty(req.ip, 4);
-          return;
-        }
-        if (decoded.aud !== "https://jontes.page") {
-          res.status(401).send("Unauthorized");
-          rateLimiter.penalty(req.ip, 4);
-          return;
-        }
-        const insert = [
-          {
-            authorId: decoded.id,
-            text: text,
-            post: post,
-            created: new Date().getTime(),
-            id: uuidv4(),
-          },
-        ];
-        await db.insert(comments).values(insert);
-        res.status(200).send("OK");
+    jwt.verify(token, JWTPublicKey, async function (err: any, decoded: any) {
+      if (err) {
+        res.status(401).send(err.message);
+        rateLimiter.penalty(req.ip, 4);
+        return;
       }
-    );
+      if (decoded.aud !== "https://jontes.page") {
+        res.status(401).send("Unauthorized");
+        rateLimiter.penalty(req.ip, 4);
+        return;
+      }
+      const insert = [
+        {
+          authorId: decoded.id,
+          text: text,
+          post: post,
+          created: new Date().getTime(),
+          id: uuidv4(),
+        },
+      ];
+      await db.insert(comments).values(insert);
+      res.status(200).send("OK");
+    });
   } catch {
     res.status(500).send("Internal Server Error");
   }
@@ -434,30 +429,26 @@ app.delete("/comment/:id", async (req: Request, res: Response) => {
       return;
     }
 
-    jwt.verify(
-      token,
-      JWTPublicKey,
-      async function (err: any, decoded: any) {
-        if (err) {
-          res.status(401).send(err.message);
-          rateLimiter.penalty(req.ip, 4);
-          return;
-        }
-        if (decoded.aud !== "https://jontes.page") {
-          res.status(401).send("Unauthorized");
-          rateLimiter.penalty(req.ip, 4);
-          return;
-        }
-        if (!id) {
-          res.status(400).send("Bad Request");
-          return;
-        }
-        await db
-          .delete(comments)
-          .where(and(eq(comments.id, id), eq(comments.authorId, decoded.id)));
-        res.status(200).send("OK");
+    jwt.verify(token, JWTPublicKey, async function (err: any, decoded: any) {
+      if (err) {
+        res.status(401).send(err.message);
+        rateLimiter.penalty(req.ip, 4);
+        return;
       }
-    );
+      if (decoded.aud !== "https://jontes.page") {
+        res.status(401).send("Unauthorized");
+        rateLimiter.penalty(req.ip, 4);
+        return;
+      }
+      if (!id) {
+        res.status(400).send("Bad Request");
+        return;
+      }
+      await db
+        .delete(comments)
+        .where(and(eq(comments.id, id), eq(comments.authorId, decoded.id)));
+      res.status(200).send("OK");
+    });
   } catch {
     res.status(500).send("Internal Server Error");
   }

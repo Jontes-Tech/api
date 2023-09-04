@@ -43,6 +43,20 @@
       "when": 1691915342534,
       "tag": "0005_simple_ricochet",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "5",
+      "when": 1693844689620,
+      "tag": "0006_spotty_ken_ellis",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "5",
+      "when": 1693845865351,
+      "tag": "0007_charming_human_robot",
+      "breakpoints": true
     }
   ]
 }

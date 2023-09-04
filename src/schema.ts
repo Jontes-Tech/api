@@ -8,6 +8,11 @@ export const users = pgTable("users", {
   lastName: varchar("last_name"),
   email: text("email"),
   displayName: text("display_name"),
+  emailHash: text("email_hash"),
+  makeEmailPublic: boolean("make_email_public").default(false),
+  hue: bigint("hue", {
+    mode: "number",
+  }),
 });
 
 export interface Comment {

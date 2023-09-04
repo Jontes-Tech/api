@@ -1,0 +1,1 @@
+ALTER TABLE "users" ADD COLUMN "make_email_public" boolean DEFAULT false;
