@@ -5,7 +5,8 @@ import { eq, and, sql } from "drizzle-orm";
 import "dotenv/config.js"
 import jwt from "jsonwebtoken";
 import { rateLimiter } from "../../middlewares/ratelimiter.js";
-const JWTPublicKey = process.env.JWTPUBLIC || "";
+import { JWTPUBLIC } from "../constants.js";
+const JWTPublicKey = JWTPUBLIC;
 
 export const deleteComment = async (req: Request, res: Response) => {
   try {

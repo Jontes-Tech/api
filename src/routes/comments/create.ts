@@ -6,7 +6,8 @@ import "dotenv/config.js"
 import jwt from "jsonwebtoken";
 import { v4 as uuidv4 } from "uuid";
 import { rateLimiter } from "../../middlewares/ratelimiter.js";
-const JWTPublicKey = process.env.JWTPUBLIC || "";
+import { JWTPUBLIC } from "../constants.js";
+const JWTPublicKey = JWTPUBLIC;
 
 export const createComment = async (req: Request, res: Response) => {
   try {
@@ -26,6 +27,7 @@ export const createComment = async (req: Request, res: Response) => {
       return;
     }
 
+    console.log(JWTPublicKey)
     jwt.verify(token, JWTPublicKey, async function (err: any, decoded: any) {
       if (err) {
         res.status(401).send(err.message);
