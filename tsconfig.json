@@ -1,16 +1,16 @@
 {
   "compilerOptions": {
-      "target": "ES2022",
-      "module": "es2022",
-      "moduleResolution": "nodenext",
-      "allowSyntheticDefaultImports": true,
-      "outDir": "./dist",
-      "skipLibCheck": true
+    "target": "es2017",
+    "module": "es2020",
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
+    "outDir": "./dist",
+    "skipLibCheck": true
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules"],
   "ts-node": {
-      "esm": true,
-      "experimentalSpecifierResolution": "node"
+    "esm": true,
+    "experimentalSpecifierResolution": "node"
   }
 }

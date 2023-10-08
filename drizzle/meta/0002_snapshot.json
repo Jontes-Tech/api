@@ -1,8 +1,8 @@
 {
   "version": "5",
   "dialect": "pg",
-  "id": "a6b9b7e3-7430-4f2d-bc02-97aa9e3a42b5",
-  "prevId": "6e0f7bbf-5b71-4c17-8ded-f5823f3e9b02",
+  "id": "0d976882-7ccb-439a-87a9-e40fd5795105",
+  "prevId": "b0916f98-a9d1-42ae-a283-2a5fc3f9e77d",
   "tables": {
     "comments": {
       "name": "comments",
@@ -78,14 +78,26 @@
           "primaryKey": false,
           "notNull": false
         },
-        "password": {
-          "name": "password",
+        "display_name": {
+          "name": "display_name",
           "type": "text",
           "primaryKey": false,
           "notNull": false
         },
-        "display_name": {
-          "name": "display_name",
+        "hue": {
+          "name": "hue",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "updated": {
+          "name": "updated",
+          "type": "bigint",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "passage_id": {
+          "name": "passage_id",
           "type": "text",
           "primaryKey": false,
           "notNull": false

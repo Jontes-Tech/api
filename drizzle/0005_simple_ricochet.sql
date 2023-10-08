@@ -1,1 +1,0 @@
-ALTER TABLE "magic_links" RENAME COLUMN "user_id" TO "email";

@@ -8,9 +8,12 @@ CREATE TABLE IF NOT EXISTS "comments" (
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "users" (
 	"id" text PRIMARY KEY NOT NULL,
+	"admin" boolean DEFAULT false,
 	"first_name" varchar,
 	"last_name" varchar,
 	"email" text,
-	"password" text,
-	"display_name" text
+	"display_name" text,
+	"hue" bigint,
+	"passage_id" text,
+	"updated" bigint
 );
