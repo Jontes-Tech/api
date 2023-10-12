@@ -55,6 +55,15 @@ app.delete(
   deleteComment
 );
 
+app.get("/age", (req: any, res: any) => {
+  res.send({
+    description: "This API is server-side rendered.",
+    years: ~~(Date.now() / 1000 - 1233516000) / 86400 / 365.2425,
+    wholeYears: Math.floor((Date.now() / 1000 - 1233516000) / 86400 / 365.2425),
+    "unix-epoch-of-birth": 1233516000,
+  });
+});
+
 app.listen(3000, () => {
   console.log(`Server is listening on port ${3000}`);
 });
