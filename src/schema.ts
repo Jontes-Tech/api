@@ -17,17 +17,9 @@ export const users = pgTable("users", {
   passageId: text("passage_id"),
 });
 
-export interface Comment {
-  id: string;
-  authorId: string;
-  text: string;
-  created: number;
-  post: string;
-}
-
 export const comments = pgTable("comments", {
-  id: text("id").notNull().primaryKey(),
-  authorId: text("author_id").notNull(),
+  id: text("id").primaryKey(),
+  authorId: text("author_id"),
   text: text("text").notNull(),
   created: bigint("created", {
     mode: "number",
@@ -35,9 +27,10 @@ export const comments = pgTable("comments", {
   post: text("post").notNull(),
 });
 
-export const commentsRelations = relations(comments, ({ one }) => ({
-  authorId: one(users, { fields: [comments.authorId], references: [users.id] }),
+export const commentsRelation = relations(comments, ({ one, many }) => ({
+  author: one(users, {
+    fields: [comments.authorId],
+    references: [users.id],
+  }),
 }));
 
-export type User = InferModel<typeof users>;
-export type NewUser = InferModel<typeof users, "insert">;

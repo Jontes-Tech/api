@@ -21,6 +21,7 @@ export const deleteComment = async (req: Request, res: Response) => {
     }
 
     jwt.verify(token, JWTPublicKey, async function (err: any, decoded: any) {
+      console.log(JSON.stringify(decoded))
       if (err) {
         res.status(401).send(err.message);
         rateLimiter.penalty(req.headers["cf-connecting-ip"] as string || "0.0.0.0", 4);

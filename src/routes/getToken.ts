@@ -30,7 +30,7 @@ export const getToken = async (req: Request, res: Response) => {
     return res.status(400).send("Invalid");
   }
   const psguser = await passage.user.get(res.userID);
-  let id = uuidv4();
+  const newid = uuidv4();
   const user = await db
     .select()
     .from(users)
@@ -42,7 +42,7 @@ export const getToken = async (req: Request, res: Response) => {
       displayName: req.body.displayName || "",
       hue: parseInt(req.body.hue) || 0,
       passageId: res.userID,
-      id: id,
+      id: newid,
       email: psguser.email,
       updated: Date.now(),
     };
@@ -61,7 +61,7 @@ export const getToken = async (req: Request, res: Response) => {
   }
   const token = jwt.sign(
     {
-      id: id,
+      id: user[0].id || newid,
       email: (scope.split(" ").includes("read:email"))
         ? psguser.email
         : undefined,

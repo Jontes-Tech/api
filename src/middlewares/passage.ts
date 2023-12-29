@@ -1,5 +1,5 @@
-import {passage} from "../passage.js"
-import {Request, Response, NextFunction} from "express";
+import { passage } from "../passage.js"
+import { Request, Response, NextFunction } from "express";
 import { rateLimiter } from "./ratelimiter.js";
 declare global {
     namespace Express {
@@ -10,12 +10,13 @@ declare global {
     }
 }
 export let passageAuthMiddleware = (() => {
-    return async (req:Request, res:Response, next:NextFunction) => {
+    return async (req: Request, res: Response, next: NextFunction) => {
         await passage
             .authenticateRequestWithHeader(req)
-            .then((userID) => {
+            .then(async (userID) => {
                 if (userID) {
                     res.userID = userID;
+                    res.email = (await passage.user.get(userID)).email
                     return next();
                 } else {
                     rateLimiter.penalty(req.headers["cf-connecting-ip"] as string || "0.0.0.0", 4)
