@@ -10,7 +10,12 @@ export const listComment = async (req: Request, res: Response) => {
 
     let gotComments = await db.query.comments.findMany({
       with: {
-        author: true
+        author: {
+          columns: {
+            displayName: true,
+            admin: true,
+          }
+        }
       },
       columns: {
         id: true,
