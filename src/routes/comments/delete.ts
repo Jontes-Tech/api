@@ -38,7 +38,7 @@ export const deleteComment = async (req: Request, res: Response) => {
       }
       await db
         .delete(comments)
-        .where(and(eq(comments.id, id), or(eq(comments.authorId, decoded.id), eq(decoded.id, "adcd9dad-1fe1-4a08-8b8c-3b9dc7eaae28"))));
+        .where(and(eq(comments.id, id), or(eq(comments.authorId, decoded.id), eq(decoded.admin, true))));
       res.setHeader("Access-Control-Allow-Origin", "https://jontes.page");
       res.status(200).send("OK");
     });
